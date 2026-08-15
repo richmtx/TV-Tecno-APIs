@@ -1,9 +1,12 @@
 import {
     Entity, PrimaryGeneratedColumn, Column,
     CreateDateColumn, UpdateDateColumn,
+    ManyToOne, JoinColumn, Index,
 } from 'typeorm';
+import { Rol } from '../../auth/enums/rol.enum';
 
 @Entity('usuarios')
+@Index('idx_usuarios_rol_activo', ['rol', 'activo'])
 export class Usuario {
     @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
     id: number;
@@ -14,14 +17,17 @@ export class Usuario {
     @Column({ name: 'password_hash', type: 'varchar', length: 255, select: false })
     passwordHash: string;
 
+    @Column({ name: 'debe_cambiar_password', type: 'boolean', default: false })
+    debeCambiarPassword: boolean;
+
     @Column({ name: 'nombre_completo', type: 'varchar', length: 120 })
     nombreCompleto: string;
 
-    @Column({ type: 'varchar', length: 150, nullable: true, unique: true })
-    correo: string | null;
+    @Column({ type: 'varchar', length: 150, unique: true })
+    correo: string;
 
-    @Column({ type: 'enum', enum: ['admin', 'editor'], default: 'editor' })
-    rol: 'admin' | 'editor';
+    @Column({ type: 'enum', enum: Rol, default: Rol.EDITOR })
+    rol: Rol;
 
     @Column({ type: 'boolean', default: true })
     activo: boolean;
@@ -34,4 +40,11 @@ export class Usuario {
 
     @UpdateDateColumn({ name: 'actualizado_en' })
     actualizadoEn: Date;
+
+    @Column({ name: 'creado_por', type: 'int', unsigned: true, nullable: true })
+    creadoPorId: number | null;
+
+    @ManyToOne(() => Usuario, { nullable: true, onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'creado_por' })
+    creadoPor: Usuario | null;
 }
