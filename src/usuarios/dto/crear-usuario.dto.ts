@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsString, Length, Matches, IsOptional } from 'class-validator';
+import { IsEnum, IsString, Length, Matches, IsOptional } from 'class-validator';
 import { Rol } from '../../auth/enums/rol.enum';
 
 export class CrearUsuarioDto {
@@ -12,10 +12,6 @@ export class CrearUsuarioDto {
     @IsString()
     @Length(3, 120)
     nombreCompleto: string;
-
-    @IsEmail({}, { message: 'El correo no tiene un formato válido' })
-    @Length(5, 150)
-    correo: string;
 
     @IsEnum(Rol, { message: 'El rol debe ser admin o editor' })
     rol: Rol;

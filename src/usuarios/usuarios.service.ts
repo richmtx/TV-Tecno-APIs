@@ -1,16 +1,11 @@
-import {
-    Injectable, NotFoundException, ConflictException,
-    BadRequestException, ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Not } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { Usuario } from './entities/usuario.entity';
 import { Rol } from '../auth/enums/rol.enum';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
-import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
-import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { FiltrarUsuariosDto } from './dto/filtrar-usuarios.dto';
 
 const RONDAS_BCRYPT = 10;
@@ -28,12 +23,11 @@ export class UsuariosService {
             .createQueryBuilder('u')
             .addSelect('u.passwordHash')
             .where('u.usuario = :usuario', { usuario })
-            .andWhere('u.activo = true')
             .getOne();
     }
 
     async buscarPorId(id: number): Promise<Usuario | null> {
-        return this.usuarioRepo.findOne({ where: { id, activo: true } });
+        return this.usuarioRepo.findOne({ where: { id } });
     }
 
     async registrarAcceso(id: number): Promise<void> {
@@ -49,7 +43,7 @@ export class UsuariosService {
 
         if (filtros.buscar) {
             qb.andWhere(
-                '(u.nombreCompleto LIKE :b OR u.correo LIKE :b OR u.usuario LIKE :b)',
+                '(u.nombreCompleto LIKE :b OR u.usuario LIKE :b)',
                 { b: `%${filtros.buscar}%` },
             );
         }
@@ -60,14 +54,13 @@ export class UsuariosService {
     }
 
     async obtenerEstadisticas() {
-        const [total, admins, editores, inactivos] = await Promise.all([
+        const [total, admins, editores] = await Promise.all([
             this.usuarioRepo.count(),
             this.usuarioRepo.count({ where: { rol: Rol.ADMIN } }),
             this.usuarioRepo.count({ where: { rol: Rol.EDITOR } }),
-            this.usuarioRepo.count({ where: { activo: false } }),
         ]);
 
-        return { total, admins, editores, inactivos };
+        return { total, admins, editores };
     }
 
     async obtenerUno(id: number): Promise<Usuario> {
@@ -80,12 +73,11 @@ export class UsuariosService {
 
     async crear(dto: CrearUsuarioDto, creadorId: number) {
         const duplicado = await this.usuarioRepo.findOne({
-            where: [{ usuario: dto.usuario }, { correo: dto.correo }],
+            where: { usuario: dto.usuario },
         });
 
         if (duplicado) {
-            const campo = duplicado.usuario === dto.usuario ? 'usuario' : 'correo';
-            throw new ConflictException(`Ya existe una cuenta con ese ${campo}`);
+            throw new ConflictException('Ya existe una cuenta con ese usuario');
         }
 
         const passwordPlano = dto.password ?? this.generarPassword();
@@ -93,11 +85,8 @@ export class UsuariosService {
         const nuevo = this.usuarioRepo.create({
             usuario: dto.usuario,
             nombreCompleto: dto.nombreCompleto,
-            correo: dto.correo,
             rol: dto.rol,
             passwordHash: await bcrypt.hash(passwordPlano, RONDAS_BCRYPT),
-            activo: true,
-            debeCambiarPassword: false,
             creadoPorId: creadorId,
         });
 
@@ -108,34 +97,11 @@ export class UsuariosService {
         return { ...limpio, passwordGenerada: dto.password ? undefined : passwordPlano };
     }
 
-    async actualizar(id: number, dto: ActualizarUsuarioDto, editorId: number) {
-        const usuario = await this.obtenerUno(id);
-
-        if (dto.correo && dto.correo !== usuario.correo) {
-            const existe = await this.usuarioRepo.findOne({
-                where: { correo: dto.correo, id: Not(id) },
-            });
-            if (existe) {
-                throw new ConflictException('Ya existe una cuenta con ese correo');
-            }
-        }
-
-        const degradaAdmin = usuario.rol === Rol.ADMIN
-            && dto.rol === Rol.EDITOR;
-        const desactiva = usuario.activo && dto.activo === false;
-
-        if (degradaAdmin || (desactiva && usuario.rol === Rol.ADMIN)) {
-            await this.validarNoEsUltimoAdmin(id);
-        }
-
-        if (id === editorId && (dto.rol === Rol.EDITOR || dto.activo === false)) {
-            throw new ForbiddenException('No puedes cambiar tu propio rol ni desactivar tu cuenta');
-        }
-
-        Object.assign(usuario, dto);
-        return this.usuarioRepo.save(usuario);
-    }
-
+    /**
+     * Borrado definitivo. La FK `creado_por` está declarada con
+     * ON DELETE SET NULL, así que las cuentas creadas por este
+     * usuario no se pierden: solo quedan sin referencia al creador.
+     */
     async eliminar(id: number, ejecutorId: number) {
         if (id === ejecutorId) {
             throw new ForbiddenException('No puedes eliminar tu propia cuenta');
@@ -147,70 +113,19 @@ export class UsuariosService {
             await this.validarNoEsUltimoAdmin(id);
         }
 
-        // Borrado lógico: preserva la referencia en creado_por.
-        usuario.activo = false;
-        await this.usuarioRepo.save(usuario);
+        await this.usuarioRepo.delete(id);
 
-        return { mensaje: `La cuenta de ${usuario.nombreCompleto} fue desactivada` };
-    }
-
-    async reactivar(id: number) {
-        const usuario = await this.obtenerUno(id);
-        usuario.activo = true;
-        await this.usuarioRepo.save(usuario);
-        return { mensaje: `La cuenta de ${usuario.nombreCompleto} fue reactivada` };
-    }
-
-    async cambiarPassword(id: number, dto: CambiarPasswordDto) {
-        const usuario = await this.usuarioRepo
-            .createQueryBuilder('u')
-            .addSelect('u.passwordHash')
-            .where('u.id = :id', { id })
-            .getOne();
-
-        if (!usuario) {
-            throw new NotFoundException('Usuario no encontrado');
-        }
-
-        const coincide = await bcrypt.compare(dto.passwordActual, usuario.passwordHash);
-        if (!coincide) {
-            throw new BadRequestException('La contraseña actual no es correcta');
-        }
-
-        if (dto.passwordActual === dto.passwordNueva) {
-            throw new BadRequestException('La nueva contraseña debe ser distinta de la actual');
-        }
-
-        await this.usuarioRepo.update(id, {
-            passwordHash: await bcrypt.hash(dto.passwordNueva, RONDAS_BCRYPT),
-            debeCambiarPassword: false,
-        });
-
-        return { mensaje: 'Contraseña actualizada' };
-    }
-
-    async resetearPassword(id: number, passwordNueva?: string) {
-        const usuario = await this.obtenerUno(id);
-        const passwordPlano = passwordNueva ?? this.generarPassword();
-
-        await this.usuarioRepo.update(id, {
-            passwordHash: await bcrypt.hash(passwordPlano, RONDAS_BCRYPT),
-        });
-
-        return {
-            mensaje: `Contraseña restablecida para ${usuario.nombreCompleto}`,
-            passwordGenerada: passwordNueva ? undefined : passwordPlano,
-        };
+        return { mensaje: `La cuenta de ${usuario.nombreCompleto} fue eliminada` };
     }
 
     private async validarNoEsUltimoAdmin(idExcluido: number): Promise<void> {
         const otrosAdmins = await this.usuarioRepo.count({
-            where: { rol: Rol.ADMIN, activo: true, id: Not(idExcluido) },
+            where: { rol: Rol.ADMIN, id: Not(idExcluido) },
         });
 
         if (otrosAdmins === 0) {
             throw new ForbiddenException(
-                'Debe existir al menos un administrador activo en el sistema',
+                'Debe existir al menos un administrador en el sistema',
             );
         }
     }

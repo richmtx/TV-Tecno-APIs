@@ -6,7 +6,7 @@ import {
 import { Rol } from '../../auth/enums/rol.enum';
 
 @Entity('usuarios')
-@Index('idx_usuarios_rol_activo', ['rol', 'activo'])
+@Index('idx_usuarios_rol', ['rol'])
 export class Usuario {
     @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
     id: number;
@@ -17,20 +17,11 @@ export class Usuario {
     @Column({ name: 'password_hash', type: 'varchar', length: 255, select: false })
     passwordHash: string;
 
-    @Column({ name: 'debe_cambiar_password', type: 'boolean', default: false })
-    debeCambiarPassword: boolean;
-
     @Column({ name: 'nombre_completo', type: 'varchar', length: 120 })
     nombreCompleto: string;
 
-    @Column({ type: 'varchar', length: 150, unique: true })
-    correo: string;
-
     @Column({ type: 'enum', enum: Rol, default: Rol.EDITOR })
     rol: Rol;
-
-    @Column({ type: 'boolean', default: true })
-    activo: boolean;
 
     @Column({ name: 'ultimo_acceso', type: 'datetime', nullable: true })
     ultimoAcceso: Date | null;
