@@ -97,11 +97,6 @@ export class UsuariosService {
         return { ...limpio, passwordGenerada: dto.password ? undefined : passwordPlano };
     }
 
-    /**
-     * Borrado definitivo. La FK `creado_por` está declarada con
-     * ON DELETE SET NULL, así que las cuentas creadas por este
-     * usuario no se pierden: solo quedan sin referencia al creador.
-     */
     async eliminar(id: number, ejecutorId: number) {
         if (id === ejecutorId) {
             throw new ForbiddenException('No puedes eliminar tu propia cuenta');

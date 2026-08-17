@@ -1,8 +1,5 @@
-import {
-    Entity, PrimaryGeneratedColumn, Column,
-    CreateDateColumn, UpdateDateColumn,
-    ManyToOne, JoinColumn, Index,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn,
+    ManyToOne, JoinColumn, Index, } from 'typeorm';
 import { Rol } from '../../auth/enums/rol.enum';
 
 @Entity('usuarios')
