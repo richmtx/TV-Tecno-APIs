@@ -9,6 +9,8 @@ import { AppService } from './app.service';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
 import { ProgramacionDestacadaModule } from './programacion-destacada/programacion-destacada.module';
+import { NoticiasModule } from './noticias/noticias.module';
+import { NoticiasRapidasModule } from './noticias-rapidas/noticias-rapidas.module';
 
 @Module({
   imports: [
@@ -47,6 +49,8 @@ import { ProgramacionDestacadaModule } from './programacion-destacada/programaci
     UsuariosModule,
     AuthModule,
     ProgramacionDestacadaModule,
+    NoticiasModule,
+    NoticiasRapidasModule,
   ],
   controllers: [AppController],
   providers: [AppService],
