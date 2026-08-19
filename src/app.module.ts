@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProgramacionDestacadaModule } from './programacion-destacada/programacion-destacada.module';
 import { NoticiasModule } from './noticias/noticias.module';
 import { NoticiasRapidasModule } from './noticias-rapidas/noticias-rapidas.module';
+import { VideotecaModule } from './videoteca/videoteca.module';
 
 @Module({
   imports: [
@@ -42,7 +43,7 @@ import { NoticiasRapidasModule } from './noticias-rapidas/noticias-rapidas.modul
       serveRoot: '/uploads',
       serveStaticOptions: {
         index: false,
-        maxAge: 86400000, // 1 día de caché en el navegador
+        maxAge: 86400000,
       },
     }),
 
@@ -51,6 +52,7 @@ import { NoticiasRapidasModule } from './noticias-rapidas/noticias-rapidas.modul
     ProgramacionDestacadaModule,
     NoticiasModule,
     NoticiasRapidasModule,
+    VideotecaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
