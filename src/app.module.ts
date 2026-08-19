@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
+import { ProgramacionDestacadaModule } from './programacion-destacada/programacion-destacada.module';
 
 @Module({
   imports: [
@@ -32,8 +35,18 @@ import { AuthModule } from './auth/auth.module';
       }),
     }),
 
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+      serveStaticOptions: {
+        index: false,
+        maxAge: 86400000, // 1 día de caché en el navegador
+      },
+    }),
+
     UsuariosModule,
     AuthModule,
+    ProgramacionDestacadaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
