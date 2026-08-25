@@ -16,8 +16,12 @@ async function bootstrap() {
     }),
   );
 
+  const origenes = (config.get<string>('CORS_ORIGINS') ?? 'http://localhost:4200,http://localhost:4300')
+    .split(',')
+    .map((o) => o.trim());
+
   app.enableCors({
-    origin: ['http://localhost:4200'],
+    origin: origenes,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
