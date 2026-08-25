@@ -1,9 +1,10 @@
 import { ArrayUnique, IsArray, IsInt, ArrayMinSize, ArrayMaxSize } from 'class-validator';
+import { TOTAL_DESTACADOS } from '../programacion-destacada.constants';
 
 export class ReordenarProgramacionDto {
     @IsArray()
-    @ArrayMinSize(5, { message: 'Debes enviar exactamente los 5 ids.' })
-    @ArrayMaxSize(5, { message: 'Debes enviar exactamente los 5 ids.' })
+    @ArrayMinSize(TOTAL_DESTACADOS, { message: `Debes enviar exactamente los ${TOTAL_DESTACADOS} ids.` })
+    @ArrayMaxSize(TOTAL_DESTACADOS, { message: `Debes enviar exactamente los ${TOTAL_DESTACADOS} ids.` })
     @ArrayUnique({ message: 'No se permiten ids repetidos.' })
     @IsInt({ each: true })
     ids: number[];

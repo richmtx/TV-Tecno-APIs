@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { TOTAL_DESTACADOS } from './programacion-destacada.constants';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { ProgramacionDestacada } from './programacion-destacada.entity';
@@ -43,18 +44,21 @@ export class ProgramacionDestacadaService {
     }
 
     /**
-     * Reordena los 5 registros en una transacción.
-     * Se usa un offset temporal porque `orden` tiene índice UNIQUE:
-     * asignar directamente provocaría colisión a medio camino.
-     */
-    async reordenar(dto: ReordenarProgramacionDto, usuarioId: number): Promise<ProgramacionDestacada[]> {
-        const existentes = await this.repo.find({ where: { id: In(dto.ids) } });
-        if (existentes.length !== 5) {
-            throw new BadRequestException('Alguno de los ids enviados no existe.');
-        }
-
+   * Reordena los 5 registros dentro de una transacción.
+   * Se usa un offset temporal porque `orden` tiene índice UNIQUE:
+   * asignar directamente provocaría colisión a medio camino.
+   */
+    async reordenar(
+        dto: ReordenarProgramacionDto,
+        usuarioId: number,
+    ): Promise<ProgramacionDestacada[]> {
         await this.dataSource.transaction(async (manager) => {
             const repo = manager.getRepository(ProgramacionDestacada);
+
+            const existentes = await repo.count({ where: { id: In(dto.ids) } });
+            if (existentes !== TOTAL_DESTACADOS) {
+                throw new BadRequestException('Alguno de los ids enviados no existe.');
+            }
 
             // Paso 1: mover todos fuera del rango 1-5 para liberar el UNIQUE
             for (const [i, id] of dto.ids.entries()) {

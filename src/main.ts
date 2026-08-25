@@ -1,11 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
+
+  // Las imágenes subidas se sirven en /uploads/... tal como se guarda en la BD.
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -16,7 +23,10 @@ async function bootstrap() {
     }),
   );
 
-  const origenes = (config.get<string>('CORS_ORIGINS') ?? 'http://localhost:4200,http://localhost:4300')
+  const origenes = (
+    config.get<string>('CORS_ORIGINS') ??
+    'http://localhost:4200,http://localhost:4300'
+  )
     .split(',')
     .map((o) => o.trim());
 
@@ -32,4 +42,4 @@ async function bootstrap() {
 
   console.log(`🚀 Servidor corriendo en: http://localhost:${port}`);
 }
-bootstrap();
+void bootstrap();
