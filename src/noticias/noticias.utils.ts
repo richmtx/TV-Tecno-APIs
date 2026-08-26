@@ -22,7 +22,7 @@ export function generarSlug(texto: string): string {
  * público (.articulo__cuerpo): lo que no esté aquí, no se vería bien.
  */
 export function sanitizarContenido(html: string): string {
-    return sanitizeHtml(html, {
+    const limpio = sanitizeHtml(html, {
         allowedTags: [
             'p', 'br', 'strong', 'em', 'u', 's',
             'h2', 'h3',
@@ -34,7 +34,6 @@ export function sanitizarContenido(html: string): string {
             a: ['href', 'title', 'target', 'rel'],
         },
         allowedSchemes: ['http', 'https', 'mailto'],
-        // Fuerza que los enlaces externos abran seguros
         transformTags: {
             a: sanitizeHtml.simpleTransform('a', {
                 target: '_blank',
@@ -42,6 +41,14 @@ export function sanitizarContenido(html: string): string {
             }),
         },
     });
+
+    // El editor deja espacios duros (&nbsp;) al pegar texto de otras fuentes.
+    // El navegador no puede cortar línea en ellos, así que el párrafo se
+    // desborda. Se cambian por espacios normales.
+    return limpio
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\u00A0/g, ' ')
+        .replace(/ {2,}/g, ' ');
 }
 
 /**
@@ -55,6 +62,7 @@ export function calcularTiempoLectura(html: string | null): number | null {
     if (!texto) return null;
 
     const palabras = texto.split(/\s+/).length;
-    // 200 palabras por minuto es el promedio de lectura en español
-    return Math.max(1, Math.round(palabras / 200));
+    // 130 ppm es un ritmo de lectura pausado; con Math.ceil se redondea
+    // hacia arriba para no subestimar textos cortos.
+    return Math.max(1, Math.ceil(palabras / 100));
 }
