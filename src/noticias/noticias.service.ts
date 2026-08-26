@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In, Not } from 'typeorm';
 import { Noticia } from './noticias.entity';
 import { UpdateNoticiaDto } from './dto/update-noticia.dto';
 import { ReordenarNoticiasDto } from './dto/reordenar-noticias.dto';
+import { generarSlug, sanitizarContenido, calcularTiempoLectura } from './noticias.utils';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 
@@ -31,11 +32,58 @@ export class NoticiasService {
         return noticia;
     }
 
+    /** Público: alimenta la página de detalle /noticias/:slug */
+    async findBySlug(slug: string): Promise<Noticia> {
+        const noticia = await this.repo.findOne({ where: { slug } });
+        if (!noticia) {
+            throw new NotFoundException(`No existe la noticia «${slug}»`);
+        }
+        return noticia;
+    }
+
     async update(id: number, dto: UpdateNoticiaDto, usuarioId: number): Promise<Noticia> {
         const noticia = await this.findOne(id);
+
+        // El slug es editable, pero no puede repetirse entre noticias.
+        if (dto.slug && dto.slug !== noticia.slug) {
+            const repetido = await this.repo.findOne({
+                where: { slug: dto.slug, id: Not(id) },
+            });
+            if (repetido) {
+                throw new ConflictException('Ya existe otra noticia con ese slug.');
+            }
+        }
+
         Object.assign(noticia, dto);
+
+        // El contenido llega del editor: se limpia antes de guardarlo
+        // y el tiempo de lectura se recalcula a partir de él.
+        if (dto.contenido !== undefined) {
+            noticia.contenido = dto.contenido ? sanitizarContenido(dto.contenido) : null;
+            noticia.tiempoLectura = calcularTiempoLectura(noticia.contenido);
+        }
+
         noticia.actualizadoPor = usuarioId;
         return this.repo.save(noticia);
+    }
+
+    /** Genera un slug a partir de un título, sin guardarlo. */
+    async sugerirSlug(titulo: string, idActual: number): Promise<{ slug: string }> {
+        const base = generarSlug(titulo);
+        if (!base) {
+            throw new BadRequestException('El título no permite generar un slug válido.');
+        }
+
+        let slug = base;
+        let intento = 2;
+
+        // Si ya lo usa otra noticia, se le agrega un sufijo numérico.
+        while (await this.repo.findOne({ where: { slug, id: Not(idActual) } })) {
+            slug = `${base}-${intento}`;
+            intento++;
+        }
+
+        return { slug };
     }
 
     /**

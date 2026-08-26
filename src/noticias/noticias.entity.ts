@@ -1,7 +1,5 @@
-import {
-    Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
-    UpdateDateColumn, ManyToOne, JoinColumn, Index,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn,
+    UpdateDateColumn, ManyToOne, JoinColumn, Index, } from 'typeorm';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 
 @Entity('noticias')
@@ -13,8 +11,17 @@ export class Noticia {
     @Column({ type: 'varchar', length: 160 })
     titulo: string;
 
+    @Column({ type: 'varchar', length: 180, unique: true })
+    slug: string;
+
     @Column({ type: 'varchar', length: 255 })
     descripcion: string;
+
+    @Column({ type: 'longtext', nullable: true })
+    contenido: string | null;
+
+    @Column({ name: 'tiempo_lectura', type: 'smallint', unsigned: true, nullable: true })
+    tiempoLectura: number | null;
 
     @Column({ type: 'varchar', length: 40 })
     etiqueta: string;

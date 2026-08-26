@@ -1,7 +1,5 @@
-import {
-    Controller, Get, Patch, Param, Body, ParseIntPipe,
-    UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, ParseIntPipe, Query,
+    UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException, } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -23,11 +21,27 @@ export class NoticiasController {
         return this.service.findAll();
     }
 
+    /** Público: alimenta la página de detalle del sitio. */
+    @Get('slug/:slug')
+    findBySlug(@Param('slug') slug: string) {
+        return this.service.findBySlug(slug);
+    }
+
     @Get(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Rol.ADMIN, Rol.EDITOR)
     findOne(@Param('id', ParseIntPipe) id: number) {
         return this.service.findOne(id);
+    }
+
+    @Get(':id/sugerir-slug')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Rol.ADMIN, Rol.EDITOR)
+    sugerirSlug(
+        @Param('id', ParseIntPipe) id: number,
+        @Query('titulo') titulo: string,
+    ) {
+        return this.service.sugerirSlug(titulo ?? '', id);
     }
 
     @Patch('reordenar')
