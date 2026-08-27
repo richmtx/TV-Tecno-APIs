@@ -10,8 +10,12 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   // Las imágenes subidas se sirven en /uploads/... tal como se guarda en la BD.
+  // Los nombres son únicos y generados, así que el archivo nunca cambia:
+  // se puede cachear de forma agresiva.
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
+    maxAge: '30d',
+    immutable: true,
   });
 
   app.useGlobalPipes(

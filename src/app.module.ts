@@ -12,6 +12,7 @@ import { ProgramacionDestacadaModule } from './programacion-destacada/programaci
 import { NoticiasModule } from './noticias/noticias.module';
 import { NoticiasRapidasModule } from './noticias-rapidas/noticias-rapidas.module';
 import { VideotecaModule } from './videoteca/videoteca.module';
+import { GaleriaModule } from './galeria/galeria.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { VideotecaModule } from './videoteca/videoteca.module';
     NoticiasModule,
     NoticiasRapidasModule,
     VideotecaModule,
+    GaleriaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
