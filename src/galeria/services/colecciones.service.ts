@@ -444,6 +444,11 @@ export class ColeccionesService {
    * MySQL no ofrece restricciones de exclusión como PostgreSQL, así
    * que el traslape se valida aquí, dentro de la transacción que ya
    * bloqueó las colecciones de la sección.
+   *
+   * Una época vigente que se está creando no choca con la vigente
+   * anterior: al guardar, esa se cierra justo antes del nuevo
+   * inicio. Compararlas sin más las haría siempre incompatibles y
+   * ninguna época nueva podría abrirse.
    */
   private validarRango(
     datos: { anioInicio?: number; anioFin?: number; esActual?: boolean },
@@ -478,7 +483,14 @@ export class ColeccionesService {
         continue;
       }
 
-      const finHermana = hermana.anioFin ?? 9999;
+      // La época vigente anterior se cerrará automáticamente en el
+      // año previo al inicio de esta, así que se evalúa con ese
+      // final en lugar del abierto que tiene ahora.
+      const finHermana =
+        esActual && hermana.esActual
+          ? anioInicio - 1
+          : (hermana.anioFin ?? 9999);
+
       const seTraslapan = anioInicio <= finHermana && finPropio >= hermana.anioInicio;
 
       if (seTraslapan) {
