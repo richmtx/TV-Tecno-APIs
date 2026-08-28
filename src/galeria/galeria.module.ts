@@ -11,6 +11,7 @@ import { GaleriaPublicaService } from './services/galeria-publica.service';
 import { ColeccionesAdminController } from './controllers/colecciones-admin.controller';
 import { FotosAdminController } from './controllers/fotos-admin.controller';
 import { GaleriaPublicaController } from './controllers/galeria-publica.controller';
+import { CatalogosAdminController } from './controllers/catalogos-admin.controller';
 
 /** Módulo de la Galería ITD. */
 @Module({
@@ -23,6 +24,7 @@ import { GaleriaPublicaController } from './controllers/galeria-publica.controll
         ]),
     ],
     controllers: [
+        CatalogosAdminController,
         ColeccionesAdminController,
         FotosAdminController,
         GaleriaPublicaController,

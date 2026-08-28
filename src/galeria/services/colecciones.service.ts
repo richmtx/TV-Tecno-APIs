@@ -37,7 +37,7 @@ export class ColeccionesService {
     private readonly fotosRepo: Repository<GaleriaFoto>,
     private readonly imagenes: ImagenesService,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   // ------------------------------------------------------------
   // Lectura
@@ -359,6 +359,19 @@ export class ColeccionesService {
           }),
         ),
       );
+    });
+  }
+
+  /** Secciones con su id, para los selectores del panel. */
+  async listarSecciones(): Promise<GaleriaSeccion[]> {
+    return this.seccionesRepo.find({ order: { orden: 'ASC' } });
+  }
+
+  /** Categorías activas de una sección, con su id. */
+  async listarCategorias(seccionId: number): Promise<GaleriaCategoria[]> {
+    return this.categoriasRepo.find({
+      where: { seccionId, activo: true },
+      order: { orden: 'ASC' },
     });
   }
 
