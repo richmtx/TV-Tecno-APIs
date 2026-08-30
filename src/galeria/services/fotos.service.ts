@@ -280,6 +280,20 @@ export class FotosService {
         return fotos.length;
     }
 
+    /**
+ * Fotografías en la papelera que no pertenecen a una colección
+ * eliminada: son las que el administrador borró por separado.
+ */
+    async listarPapelera(): Promise<number> {
+        return this.fotosRepo
+            .createQueryBuilder('f')
+            .withDeleted()
+            .innerJoin('f.coleccion', 'c')
+            .where('f.eliminado_en IS NOT NULL')
+            .andWhere('c.eliminado_en IS NULL')
+            .getCount();
+    }
+
     // ------------------------------------------------------------
     // Interno
     // ------------------------------------------------------------

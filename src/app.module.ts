@@ -5,6 +5,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
@@ -51,6 +52,7 @@ import { GaleriaModule } from './galeria/galeria.module';
       },
     }),
 
+    ScheduleModule.forRoot(),
     UsuariosModule,
     AuthModule,
     ProgramacionDestacadaModule,

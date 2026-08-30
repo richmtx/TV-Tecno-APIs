@@ -12,6 +12,7 @@ import { ColeccionesAdminController } from './controllers/colecciones-admin.cont
 import { FotosAdminController } from './controllers/fotos-admin.controller';
 import { GaleriaPublicaController } from './controllers/galeria-publica.controller';
 import { CatalogosAdminController } from './controllers/catalogos-admin.controller';
+import { PurgaService } from './services/purga.service';
 
 /** Módulo de la Galería ITD. */
 @Module({
@@ -34,6 +35,7 @@ import { CatalogosAdminController } from './controllers/catalogos-admin.controll
         ColeccionesService,
         FotosService,
         GaleriaPublicaService,
+        PurgaService,
     ],
     exports: [ImagenesService, ColeccionesService, FotosService],
 })

@@ -9,7 +9,7 @@ import { CrearColeccionDto } from '../dto/crear-coleccion.dto';
 import { ActualizarColeccionDto } from '../dto/actualizar-coleccion.dto';
 import { ReordenarColeccionesDto } from '../dto/reordenar-colecciones.dto';
 import { ListarColeccionesDto } from '../dto/listar-colecciones.dto';
-import { generarSlug, slugDeEliminado } from './slug.util';
+import { generarSlug, slugDeEliminado, slugSinMarca } from './slug.util';
 import { ImagenesService } from './imagenes.service';
 
 /** Colección con su conteo de fotos, que no se almacena. */
@@ -411,6 +411,84 @@ export class ColeccionesService {
     });
   }
 
+
+
+  /* ------------------------------------------------------------
+   Papelera
+   ------------------------------------------------------------ */
+
+  /** Colecciones en la papelera, de la más reciente a la más antigua. */
+  async listarPapelera(): Promise<ColeccionConTotal[]> {
+    const colecciones = await this.coleccionesRepo
+      .createQueryBuilder('c')
+      .withDeleted()
+      .leftJoinAndSelect('c.seccion', 'seccion')
+      .leftJoinAndSelect('c.categoria', 'categoria')
+      .leftJoinAndSelect('c.portada', 'portada')
+      .loadRelationCountAndMap('c.totalFotos', 'c.fotos', 'foto')
+      .where('c.eliminado_en IS NOT NULL')
+      .orderBy('c.eliminado_en', 'DESC')
+      .getMany();
+
+    return colecciones as ColeccionConTotal[];
+  }
+
+  /**
+   * Devuelve una colección de la papelera al estado activo.
+   *
+   * Se restaura completa, con todas sus fotografías: recuperar solo
+   * una parte complicaría la interfaz sin resolver el caso real,
+   * que es haber eliminado algo por equivocación.
+   *
+   * Vuelve como borrador aunque estuviera publicada: quien restaura
+   * decide cuándo mostrarla de nuevo en el sitio.
+   */
+  async restaurar(id: number, usuarioId: number): Promise<GaleriaColeccion> {
+    return this.dataSource.transaction(async (manager) => {
+      const coleccion = await manager.findOne(GaleriaColeccion, {
+        where: { id },
+        withDeleted: true,
+        relations: { seccion: true },
+      });
+
+      if (!coleccion) {
+        throw new NotFoundException(`No existe la colección ${id}.`);
+      }
+      if (!coleccion.eliminadoEn) {
+        throw new BadRequestException('Esta colección no está en la papelera.');
+      }
+
+      // El slug original pudo quedar ocupado mientras estuvo fuera.
+      const deseado = slugSinMarca(coleccion.slug);
+      const slug = await this.slugUnico(
+        manager,
+        coleccion.seccionId,
+        deseado,
+        coleccion.id,
+      );
+
+      // Las fotos regresan solo si se fueron con la colección: las
+      // que el administrador borró aparte siguen en la papelera.
+      await manager
+        .createQueryBuilder()
+        .update(GaleriaFoto)
+        .set({ eliminadoEn: null, eliminadoPor: null })
+        .where('coleccion_id = :id', { id })
+        .andWhere('eliminado_en = :fecha', { fecha: coleccion.eliminadoEn })
+        .execute();
+
+      await manager.update(GaleriaColeccion, id, {
+        slug,
+        estado: 'borrador',
+        eliminadoEn: null,
+        eliminadoPor: null,
+        actualizadoPor: usuarioId,
+      });
+
+      return manager.findOneOrFail(GaleriaColeccion, { where: { id } });
+    });
+  }
+
   /**
    * Elimina definitivamente una colección y sus archivos.
    * La fila se borra de verdad y el `ON DELETE CASCADE` se lleva
@@ -432,6 +510,30 @@ export class ColeccionesService {
 
     await this.coleccionesRepo.delete(id);
     await this.imagenes.eliminarColeccion(id);
+  }
+
+  /**
+   * Elimina definitivamente las colecciones que llevan más de
+   * `dias` en la papelera, junto con sus archivos.
+   * Pensado para ejecutarse desde una tarea programada.
+   */
+  async purgarAntiguas(dias = 30): Promise<number> {
+    const limite = new Date();
+    limite.setDate(limite.getDate() - dias);
+
+    const colecciones = await this.coleccionesRepo
+      .createQueryBuilder('c')
+      .withDeleted()
+      .where('c.eliminado_en IS NOT NULL')
+      .andWhere('c.eliminado_en < :limite', { limite })
+      .getMany();
+
+    for (const coleccion of colecciones) {
+      await this.coleccionesRepo.delete(coleccion.id);
+      await this.imagenes.eliminarColeccion(coleccion.id);
+    }
+
+    return colecciones.length;
   }
 
   // ------------------------------------------------------------
@@ -552,17 +654,17 @@ export class ColeccionesService {
   }
 
   /**
-   * Genera un slug libre dentro de la sección.
-   * Si el título produce uno que ya existe, se le añade un número:
-   * "graduaciones", "graduaciones-2", "graduaciones-3"…
-   */
+ * Genera un slug libre dentro de la sección.
+ * Si el texto produce uno que ya existe, se le añade un número:
+ * "graduaciones", "graduaciones-2", "graduaciones-3"…
+ */
   private async slugUnico(
     manager: typeof this.dataSource.manager,
     seccionId: number,
-    titulo: string,
+    texto: string,
     idPropio: number | null,
   ): Promise<string> {
-    const base = generarSlug(titulo);
+    const base = generarSlug(texto);
     if (!base) {
       throw new BadRequestException(
         'El título debe contener al menos una letra o un número.',

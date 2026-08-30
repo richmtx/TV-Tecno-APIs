@@ -1,5 +1,7 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query,
-    Req, UseGuards, } from '@nestjs/common';
+import {
+    Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query,
+    Req, UseGuards,
+} from '@nestjs/common';
 import { ColeccionesService } from '../services/colecciones.service';
 import { CrearColeccionDto } from '../dto/crear-coleccion.dto';
 import { ActualizarColeccionDto } from '../dto/actualizar-coleccion.dto';
@@ -24,6 +26,13 @@ export class ColeccionesAdminController {
     @Roles(Rol.ADMIN, Rol.EDITOR)
     listar(@Query() filtros: ListarColeccionesDto) {
         return this.colecciones.listar(filtros);
+    }
+
+    /** Va antes de :id para que "papelera" no se lea como un id. */
+    @Get('papelera')
+    @Roles(Rol.ADMIN)
+    listarPapelera() {
+        return this.colecciones.listarPapelera();
     }
 
     @Get(':id')
@@ -89,5 +98,12 @@ export class ColeccionesAdminController {
     @Roles(Rol.ADMIN)
     purgar(@Param('id', ParseIntPipe) id: number) {
         return this.colecciones.purgar(id);
+    }
+
+    /** Devuelve una colección de la papelera al estado de borrador. */
+    @Patch(':id/restaurar')
+    @Roles(Rol.ADMIN)
+    restaurar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+        return this.colecciones.restaurar(id, req.user.id);
     }
 }
