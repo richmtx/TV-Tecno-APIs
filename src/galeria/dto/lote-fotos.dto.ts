@@ -13,7 +13,6 @@ export class AsignarAnioLoteDto {
     @IsInt({ each: true })
     ids: number[];
 
-    /** Enviar sin año limpia el campo en todas las seleccionadas. */
     @IsOptional()
     @IsInt()
     @Min(1900)
@@ -21,7 +20,6 @@ export class AsignarAnioLoteDto {
     anio?: number;
 }
 
-/** Eliminación de varias fotografías a la vez. */
 export class EliminarLoteDto {
     @IsArray()
     @ArrayNotEmpty()

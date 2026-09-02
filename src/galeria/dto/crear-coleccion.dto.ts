@@ -44,7 +44,6 @@ export class CrearColeccionDto {
     @Max(2200)
     anioFin?: number;
 
-    /** Época abierta: "2011 - Actualidad". Solo una por sección. */
     @IsOptional()
     @IsBoolean()
     esActual?: boolean;

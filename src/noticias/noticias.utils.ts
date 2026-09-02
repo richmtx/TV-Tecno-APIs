@@ -6,13 +6,13 @@ import sanitizeHtml from 'sanitize-html';
  */
 export function generarSlug(texto: string): string {
     return texto
-        .normalize('NFD')                  // separa las letras de sus acentos
-        .replace(/[\u0300-\u036f]/g, '')   // quita los acentos
+        .normalize('NFD')                
+        .replace(/[\u0300-\u036f]/g, '') 
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')      // fuera signos de puntuación
+        .replace(/[^a-z0-9\s-]/g, '')   
         .trim()
-        .replace(/\s+/g, '-')              // espacios → guiones
-        .replace(/-+/g, '-')               // colapsa guiones repetidos
+        .replace(/\s+/g, '-')          
+        .replace(/-+/g, '-')        
         .slice(0, 180);
 }
 

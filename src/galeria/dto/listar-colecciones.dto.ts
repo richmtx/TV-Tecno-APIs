@@ -20,7 +20,6 @@ export class ListarColeccionesDto {
     @IsString()
     busqueda?: string;
 
-    /** Incluye las colecciones en la papelera. Solo para el admin. */
     @IsOptional()
     @IsIn(['true', 'false'])
     incluirEliminadas?: string;
