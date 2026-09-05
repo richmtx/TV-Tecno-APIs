@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -14,6 +12,7 @@ import { NoticiasModule } from './noticias/noticias.module';
 import { NoticiasRapidasModule } from './noticias-rapidas/noticias-rapidas.module';
 import { VideotecaModule } from './videoteca/videoteca.module';
 import { GaleriaModule } from './galeria/galeria.module';
+import { AcercaModule } from './acerca/acerca.module';
 
 @Module({
   imports: [
@@ -43,15 +42,6 @@ import { GaleriaModule } from './galeria/galeria.module';
       }),
     }),
 
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
-      serveStaticOptions: {
-        index: false,
-        maxAge: 86400000,
-      },
-    }),
-
     ScheduleModule.forRoot(),
     UsuariosModule,
     AuthModule,
@@ -60,6 +50,7 @@ import { GaleriaModule } from './galeria/galeria.module';
     NoticiasRapidasModule,
     VideotecaModule,
     GaleriaModule,
+    AcercaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
