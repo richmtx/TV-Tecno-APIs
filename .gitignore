@@ -58,5 +58,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Carpeta de imagenes uploads
 /uploads/*
 !/uploads/*/
+!/uploads/*/*/
 /uploads/*/*
 !/uploads/*/.gitkeep
+!/uploads/*/*/.gitkeep
